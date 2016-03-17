@@ -31,16 +31,12 @@ class Filter {
 class BrightnessFilter: Filter {
     override func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8) {
         super.applyFilter(onPixel: &pixel, andIntensity: intensity)
-        print("mpika")
-        print(intensity)
         
 //                let relativeLuminance = Double(pixel.red) * 0.2126 + Double(pixel.blue) * 0.0722 + Double(pixel.green) * 0.7152
                 //find the amount to add based on the intensity
-                /*
-
-                let blueToCalc = pixel.blue * intensityPercent
-                let redToCalc = pixel.red * intensityPercent
-                let greenToCalc = pixel.green * intensityPercent
+                let blueToCalc = pixel.blue * intensity
+                let redToCalc = pixel.red * intensity
+                let greenToCalc = pixel.green * intensity
         
                 if intensity < 0 {
                     
@@ -52,7 +48,7 @@ class BrightnessFilter: Filter {
                     pixel.red = minMaxRGB(pixel.red + redToCalc)
                     pixel.blue = minMaxRGB(pixel.blue + blueToCalc)
                 }
-*/
+
         
 
     }
