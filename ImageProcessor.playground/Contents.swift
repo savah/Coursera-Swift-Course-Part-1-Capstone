@@ -4,86 +4,114 @@ import UIKit
 
 
 protocol Filterable {
-    func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8)
+    func applyFilter(inout onPixel pixel: Pixel, withIntensity intensity: Int)
 }
 
-class Filter {
-    var intensity: UInt8 = 20
+class Filter : Filterable {
+    var intensity: Int
+    
+    init() {
+        self.intensity = 20
+    }
+    
+    init(withIntensity intensity: Int) {
+        self.intensity = intensity
+    }
+
     
     var intensityPercent : Double {
         get {
             return Double (intensity) / Double(100)
         }
         set {
-            self.intensity = UInt8(newValue)
+            self.intensity = Int(newValue)
         }
         
     }
     
-    func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8) {
+    func applyFilter(inout onPixel pixel: Pixel, withIntensity intensity: Int) {
     }
     
-    func minMaxRGB(number: UInt8) -> UInt8{
-        return UInt8(max(0, min(255, number)))
+    func minMaxRGB(number: Int) -> Int{
+        return Int(max(0, min(255, number)))
     }
-}
-
-class BrightnessFilter: Filter {
-    override func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8) {
-        super.applyFilter(onPixel: &pixel, andIntensity: intensity)
-        
-//                let relativeLuminance = Double(pixel.red) * 0.2126 + Double(pixel.blue) * 0.0722 + Double(pixel.green) * 0.7152
-                //find the amount to add based on the intensity
-                let blueToCalc = pixel.blue * intensity
-                let redToCalc = pixel.red * intensity
-                let greenToCalc = pixel.green * intensity
-        
-                if intensity < 0 {
-                    
-                    pixel.green = minMaxRGB(pixel.green - greenToCalc)
-                    pixel.red = minMaxRGB(pixel.red - redToCalc)
-                    pixel.blue = minMaxRGB(pixel.blue - blueToCalc)
-                } else {
-                    pixel.green = minMaxRGB(pixel.green + greenToCalc)
-                    pixel.red = minMaxRGB(pixel.red + redToCalc)
-                    pixel.blue = minMaxRGB(pixel.blue + blueToCalc)
-                }
-
-        
-
+    func minMaxRGB(number: Float) -> Int{
+        return Int(max(0, min(255, number)))
     }
-    
 }
 
 class ContrastFilter: Filter {
+    
+    override init() {
+        //set default modifier
+        super.init()
+        self.intensity = 190
+    }
+    
+    override init(withIntensity intensity: Int) {
+        super.init(withIntensity: intensity)
+    }
 
-    override func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8) {
-        super.applyFilter(onPixel: &pixel, andIntensity: intensity)
+    override func applyFilter(inout onPixel pixel: Pixel, withIntensity intensity: Int) {
+        super.applyFilter(onPixel: &pixel, withIntensity: intensity)
         
+        //calculate the contrast factor found @ http://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-5-contrast-adjustment/
         
+        let contrastFactor: Float = (259 * (20 + 255)) / (255 * (259 - 20))
 
+        let redVal = Int(pixel.red)
+        let blueVal = Int(pixel.blue)
+        let greenVal = Int(pixel.green)
+
+        //calculate the new RGB values
+        var newRed   = contrastFactor * Float((redVal - 128)) + 128
+        var newGreen = contrastFactor * Float((greenVal - 128)) + 128
+        var newBlue  = contrastFactor * Float((blueVal - 128)) + 128
+
+        newBlue = Float(minMaxRGB(newBlue))
+        newRed = Float(minMaxRGB(newRed))
+        newGreen = Float(minMaxRGB(newGreen))
+
+        pixel.red = UInt8(newRed)
+        pixel.green = UInt8(newGreen)
+        pixel.blue = UInt8(newBlue)
+        
     }
     
 }
 
 class GrayscaleFilter: Filter {
-    override func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8) {
-        super.applyFilter(onPixel: &pixel, andIntensity: intensity)
+    
+    override func applyFilter(inout onPixel pixel: Pixel, withIntensity intensity: Int) {
+        super.applyFilter(onPixel: &pixel, withIntensity: intensity)
 
-        let grayScaleBlue = Double(pixel.blue) * 0.114
-        let grayScaleGreen = Double(pixel.green) * 0.587
-        let grayScaleRed = Double(pixel.red) * 0.299
-                
-        pixel.red = UInt8(grayScaleRed)
-        pixel.blue = UInt8(grayScaleBlue)
-        pixel.green = UInt8(grayScaleGreen)
+        //calculate values found @ http://www.dfstudios.co.uk/articles/programming/image-programming-algorithms/image-processing-algorithms-part-3-greyscale-conversion/
+        let grayScaleBlue = Float(pixel.blue) * 0.1140
+        let grayScaleGreen = Float(pixel.green) * 0.5870
+        let grayScaleRed = Float(pixel.red) * 0.2989
+        let newPixelColor = UInt8(minMaxRGB(grayScaleRed)) + UInt8(minMaxRGB(grayScaleBlue)) + UInt8(minMaxRGB(grayScaleGreen))
+
+        
+        pixel.red = newPixelColor
+        pixel.blue = newPixelColor
+        pixel.green = newPixelColor
     }
 }
 
 
 class GreenFilter: Filter {
-    override func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8) {
-        super.applyFilter(onPixel: &pixel, andIntensity: intensity)
+    override init() {
+        //set default modifier
+        super.init()
+        self.intensity = 255
+    }
+    
+    override init(withIntensity intensity: Int) {
+        super.init(withIntensity: intensity)
+    }
+    
+    override func applyFilter(inout onPixel pixel: Pixel, withIntensity intensity: Int) {
+        super.applyFilter(onPixel: &pixel, withIntensity: intensity)
 
         pixel.green = UInt8(max(0, min(255, intensity)))
         
@@ -91,18 +119,56 @@ class GreenFilter: Filter {
 }
 
 class RedFilter: Filter {
-    override func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8) {
-        super.applyFilter(onPixel: &pixel, andIntensity: intensity)
+    override init() {
+        //set default modifier
+        super.init()
+        self.intensity = 25
+    }
+    
+    override init(withIntensity intensity: Int) {
+        super.init(withIntensity: intensity)
+    }
+    
+    override func applyFilter(inout onPixel pixel: Pixel, withIntensity intensity: Int) {
+        super.applyFilter(onPixel: &pixel, withIntensity: intensity)
         pixel.red = UInt8(max(0, min(255, intensity)))
     
     }
 }
 
 class BlueFilter: Filter {
-    override func applyFilter(inout onPixel pixel: Pixel, andIntensity intensity: UInt8) {
-        super.applyFilter(onPixel: &pixel, andIntensity: intensity)
+    override init() {
+        //set default modifier
+        super.init()
+        self.intensity = 145
+    }
+    
+    override init(withIntensity intensity: Int) {
+        super.init(withIntensity: intensity)
+    }
+    
+    override func applyFilter(inout onPixel pixel: Pixel, withIntensity intensity: Int) {
+        super.applyFilter(onPixel: &pixel, withIntensity: intensity)
         
         pixel.blue = UInt8(max(0, min(255, intensity)))
+    }
+}
+
+class AlphaFilter: Filter {
+    override init() {
+        //set default modifier
+        super.init()
+        self.intensity = 15
+    }
+    
+    override init(withIntensity intensity: Int) {
+        super.init(withIntensity: intensity)
+    }
+    
+    override func applyFilter(inout onPixel pixel: Pixel, withIntensity intensity: Int) {
+        super.applyFilter(onPixel: &pixel, withIntensity: intensity)
+        
+        pixel.alpha = UInt8(max(0, min(255, intensity)))
     }
 }
 
@@ -112,14 +178,16 @@ class ImageProcessor {
     var image: UIImage? = nil
     var rgbaImage: RGBAImage?
     
-    var filtersByName: [String: Filter] = [
+    let filtersByName: [String: Filter] = [
         "blue" : BlueFilter(),
         "red" : RedFilter(),
         "green" : GreenFilter(),
         "grayscale" : GrayscaleFilter(),
-        "brightness" : BrightnessFilter()
+        "contrast" : ContrastFilter(),
+        "alpha" : AlphaFilter(),
     ];
     var filters: [Filter]
+    var stringFilters: [String]
     
     init(withImage imageName:String) {
         self.image = UIImage(named: imageName)!
@@ -127,20 +195,33 @@ class ImageProcessor {
             self.rgbaImage = RGBAImage(image: self.image!)!
         }
         self.filters = []
+        self.stringFilters = []
     }
     
     func addFilter(aFilter: Filter) {
         self.filters.append(aFilter)
     }
     
+    func addStringFilter(stringFilter: String) {
+        self.stringFilters.append(stringFilter)
+    }
+    
     func applyFilters(filtersArr: [Filter]) {
+        //check if the user used the predefined filters
+        
+        if self.stringFilters.count > 0 {
+            for filter in self.stringFilters {
+                self.filters.append(self.filtersByName[filter]!)
+            }
+        }
+        
         for y in 0..<self.rgbaImage!.height {
             for x in 0..<self.rgbaImage!.width {
                 
                 let index = y * self.rgbaImage!.width + x
                 var pixel = self.rgbaImage!.pixels[index]
                 for filter in self.filters {
-                    filter.applyFilter(onPixel: &pixel, andIntensity: filter.intensity)
+                    filter.applyFilter(onPixel: &pixel, withIntensity: filter.intensity)
                     self.rgbaImage!.pixels[index] = pixel
                 }
                 
@@ -153,27 +234,57 @@ let imageProcess = ImageProcessor(withImage: "sample")
 
 imageProcess.image
 
-let green = GreenFilter()
-green.intensity = 255
+/*
+Initialization of several filters
+*/
 
-let blue = BlueFilter()
-blue.intensity = 255
+/*
+let green = GreenFilter(withIntensity: 255)
+let blue = BlueFilter(withIntensity: 255)
+let red = RedFilter(withIntensity: 25)
+let contrast = ContrastFilter(withIntensity: -128)
+let alpha = AlphaFilter(withIntensity: 15)
+let grayscaleFilter = GrayscaleFilter()
+*/
+/*
 
-let red = RedFilter()
-red.intensity = 255
+And the code to add them to the filter array in order to be processed in a later stage
+*/
 
-//let lighten = BrightnessFilter()
-//lighten.intensity = 20
-//imageProcess.addFilter(lighten)
-
-//let grayscaleFilter = Grayscale()
 //imageProcess.addFilter(grayscaleFilter)
+//imageProcess.addFilter(alpha)
+//imageProcess.addFilter(green)
+//imageProcess.addFilter(blue)
+//imageProcess.addFilter(red)
+//imageProcess.addFilter(contrast)
 
-imageProcess.addFilter(green)
-imageProcess.addFilter(blue)
-imageProcess.addFilter(red)
+/*
 
-//apply all the filters
+Possible values in order to apply default filters
+
+"blue" with default value of 145
+"red" with default value of 25
+"green" with default value of 255
+"grayscale" has no default value as it just changes the image to grayscale
+"contrast" with default value of 190
+"alpha" with default value of 15
+
+and their respective calls
+*/
+//imageProcess.addStringFilter("green")
+//imageProcess.addStringFilter("red")
+//imageProcess.addStringFilter("blue")
+//imageProcess.addStringFilter("alpha")
+//imageProcess.addStringFilter("grayscale")
+//imageProcess.addStringFilter("contrast")
+/*
+
+apply all the filters function call
+*/
 imageProcess.applyFilters(imageProcess.filters)
+
+/*
+Display the new filtered image
+*/
 let newImage = imageProcess.rgbaImage?.toUIImage()
 
